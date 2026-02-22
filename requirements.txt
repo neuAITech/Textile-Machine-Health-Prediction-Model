@@ -1,0 +1,21 @@
+# ==============================================================================
+# Textile Machine Failure Prediction - Requirements
+# ==============================================================================
+
+# Core Data & Computation
+numpy
+pandas
+
+# Machine Learning
+scikit-learn
+xgboost
+lightgbm
+joblib
+
+# Visualization
+plotly
+matplotlib
+seaborn
+
+# Web Dashboard
+streamlit

@@ -1,0 +1,77 @@
+=== DATASET OVERVIEW ===
+Shape: (5000, 30)
+
+Colum Dtypes:
+Timestamp                     datetime64[ns]
+Machine_ID                            object
+Machine_Type                          object
+Section                               object
+Machine_Speed_RPM                      int64
+Temp_C                               float64
+Humidity_%                             int64
+Machine_State                         object
+Shift                                 object
+Energy_kWh                           float64
+Power_Factor                         float64
+Motor_Current_A                      float64
+Voltage_Variation_%                  float64
+Output_kg                              int64
+Yarn_Breaks_Count                      int64
+Waste_kg                             float64
+Safety_Interlock_Triggered             int64
+Auto_Shutdown_Flag                     int64
+Emergency_Stop_Count                   int64
+Current_Ratio                        float64
+Mechanical_Friction_Index            float64
+Wear_Score                           float64
+Degradation_Phase                     object
+Component_Health_%                   float64
+RUL_Hours                            float64
+Material_Buffer_Level_kg               int64
+Yarn_Count_Ne                          int64
+Speed_Override_Flag                    int64
+Torque_Load_Index                    float64
+Efficiency_Index                     float64
+
+Missing Values:
+Timestamp                     0
+Machine_ID                    0
+Machine_Type                  0
+Section                       0
+Machine_Speed_RPM             0
+Temp_C                        0
+Humidity_%                    0
+Machine_State                 0
+Shift                         0
+Energy_kWh                    0
+Power_Factor                  0
+Motor_Current_A               0
+Voltage_Variation_%           0
+Output_kg                     0
+Yarn_Breaks_Count             0
+Waste_kg                      0
+Safety_Interlock_Triggered    0
+Auto_Shutdown_Flag            0
+Emergency_Stop_Count          0
+Current_Ratio                 0
+Mechanical_Friction_Index     0
+Wear_Score                    0
+Degradation_Phase             0
+Component_Health_%            0
+RUL_Hours                     0
+Material_Buffer_Level_kg      0
+Yarn_Count_Ne                 0
+Speed_Override_Flag           0
+Torque_Load_Index             0
+Efficiency_Index              0
+
+Descriptive Statistics:
+                 Timestamp  Machine_Speed_RPM       Temp_C   Humidity_%   Energy_kWh  Power_Factor  Motor_Current_A  Voltage_Variation_%    Output_kg  Yarn_Breaks_Count     Waste_kg  Safety_Interlock_Triggered  Auto_Shutdown_Flag  Emergency_Stop_Count  Current_Ratio  Mechanical_Friction_Index   Wear_Score  Component_Health_%    RUL_Hours  Material_Buffer_Level_kg  Yarn_Count_Ne  Speed_Override_Flag  Torque_Load_Index  Efficiency_Index
+count                 5000        5000.000000  5000.000000  5000.000000  5000.000000   5000.000000      5000.000000          5000.000000  5000.000000        5000.000000  5000.000000                 5000.000000         5000.000000           5000.000000    5000.000000                5000.000000  5000.000000         5000.000000  5000.000000               5000.000000    5000.000000           5000.00000        5000.000000       5000.000000
+mean   2024-04-14 03:30:00        1201.198600    67.961260    59.486800    41.910718      0.899772        54.942900            -0.053850   120.100600           2.017800     4.475740                    0.025600            0.045000              0.099000       1.000000                   1.022916    29.371540           70.628460  1412.569200                443.195600      28.682000              0.14220           0.964532          0.825938
+min    2024-01-01 00:00:00         900.000000    42.800000    45.000000    23.950000      0.820000        22.900000            -4.000000    60.000000           0.000000     1.500000                    0.000000            0.000000              0.000000       0.414989                   0.800000     7.300000           38.800000   776.000000                214.000000      20.000000              0.00000           0.630000          0.710000
+25%    2024-02-22 01:45:00        1053.000000    63.900000    52.000000    38.537500      0.860000        49.600000            -2.060000    90.000000           1.000000     3.010000                    0.000000            0.000000              0.000000       0.903636                   0.956790    23.400000           65.300000  1306.000000                328.000000      24.000000              0.00000           0.820000          0.780000
+50%    2024-04-14 03:30:00        1204.000000    68.000000    59.000000    41.960000      0.900000        54.900000            -0.075000   120.000000           2.000000     4.450000                    0.000000            0.000000              0.000000       0.999425                   1.015798    29.000000           71.000000  1420.000000                434.000000      30.000000              0.00000           0.980000          0.810000
+75%    2024-06-05 05:15:00        1349.000000    72.100000    67.000000    45.260000      0.940000        60.300000             1.920000   151.000000           3.000000     5.980000                    0.000000            0.000000              0.000000       1.097650                   1.079361    34.700000           76.600000  1532.000000                538.000000      36.000000              0.00000           1.110000          0.880000
+max    2024-07-27 07:00:00        1499.000000    88.800000    74.000000    60.220000      0.980000        82.800000             4.000000   179.000000           9.000000     7.500000                    1.000000            1.000000              3.000000       1.502228                   1.500000    61.200000           92.700000  1854.000000                758.000000      40.000000              1.00000           1.200000          0.940000
+std                    NaN         171.489278     6.072614     8.578213     5.035673      0.046551         7.911434             2.294468    34.600935           1.429228     1.730217                    0.157955            0.207325              0.314355       0.143689                   0.090604     8.299226            8.299226   165.984514                141.160502       6.778618              0.34929           0.164793          0.063885

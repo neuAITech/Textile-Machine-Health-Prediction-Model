@@ -1,0 +1,5 @@
+Target,Best_Model,Accuracy,F1,CV_F1_mean,R2,MAE,RMSE,CV_R2_mean
+Failure_Mode_Code,Random Forest,1.0,1.0,0.9977429833568043,,,,
+Failure_Imminent_Flag,Random Forest,1.0,1.0,1.0,,,,
+Target_Failure_24H,Gradient Boosting,1.0,1.0,1.0,,,,
+Target_RUL_Hours,Ridge Regression,,,,0.9999991341323872,0.12230595632675648,0.1549329329131367,0.9999984591395243
