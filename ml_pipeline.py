@@ -1,6 +1,6 @@
 """
 =============================================================================
- TEXTILE MACHINE FAILURE PREDICTION - Complete ML Pipeline
+ MONITORING YARN MACHINE HEALTH AND EFFICIENCY - Complete ML Pipeline
  =============================================================================
  Dataset : Textile Manufacturing Machine Monitoring (5001 rows × 30 cols)
  Targets :

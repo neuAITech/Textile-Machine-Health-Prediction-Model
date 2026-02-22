@@ -1,6 +1,6 @@
 """
 =============================================================================
- TEXTILE MACHINE FAILURE PREDICTION — Streamlit Dashboard
+ MONITORING YARN MACHINE HEALTH AND EFFICIENCY — Streamlit Dashboard
 =============================================================================
  Pages:
    1. Dashboard / Overview   – live KPIs & sensor gauges from data.csv
@@ -25,7 +25,7 @@ RESULT_DIR = os.path.join(BASE_DIR, "results")
 
 # ── page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Textile Machine Failure Prediction",
+    page_title="Monitoring Yarn Machine Health and Efficiency",
     page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -42,7 +42,6 @@ st.markdown("""
 .stApp {
     background: linear-gradient(135deg, #0a0a0f 0%, #0d1117 50%, #0a0a14 100%);
     font-family: 'Inter', sans-serif;
-    zoom: 1.15;
 }
 html, body, [data-testid="stAppViewContainer"] {
     font-size: 16px !important;
@@ -84,6 +83,7 @@ h3 { font-weight: 600 !important; font-size: 1.3rem !important; }
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     line-height: 1.2;
+    word-break: break-word;
 }
 .metric-label {
     font-size: 1rem;
@@ -133,6 +133,7 @@ h3 { font-weight: 600 !important; font-size: 1.3rem !important; }
     font-size: 2.2rem;
     font-weight: 800;
     line-height: 1.2;
+    word-break: break-word;
 }
 .pred-sub {
     font-size: 0.9rem;
@@ -145,9 +146,11 @@ h3 { font-weight: 600 !important; font-size: 1.3rem !important; }
     display: flex;
     gap: 16px;
     margin-bottom: 24px;
+    flex-wrap: wrap;
 }
 .scenario-card {
     flex: 1;
+    min-width: 200px;
     border-radius: 14px;
     padding: 20px 24px;
     text-align: center;
@@ -222,6 +225,86 @@ h3 { font-weight: 600 !important; font-size: 1.3rem !important; }
 
 /* ── plotly charts bg ───────────────────────────────────────────────────── */
 .js-plotly-plot .plotly .main-svg { border-radius: 12px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — auto-adjust to screen size
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Large desktops (> 1200px) — subtle upscale ─────────────────────────── */
+@media (min-width: 1201px) {
+    .stApp { zoom: 1.05; }
+}
+
+/* ── Small desktops / tablets landscape (≤ 1200px) ──────────────────────── */
+@media (max-width: 1200px) {
+    html, body, [data-testid="stAppViewContainer"] { font-size: 15px !important; }
+    h1 { font-size: 1.9rem !important; }
+    h2 { font-size: 1.4rem !important; }
+    h3 { font-size: 1.15rem !important; }
+    .metric-value { font-size: 2.2rem; }
+    .metric-label { font-size: 0.85rem; letter-spacing: 1px; }
+    .metric-card { padding: 18px 14px; border-radius: 12px; }
+    .pred-card { padding: 22px 16px; min-height: 130px; }
+    .pred-value { font-size: 1.8rem; }
+    .pred-title { font-size: 0.9rem; letter-spacing: 1px; }
+    .page-banner { padding: 22px 28px; margin-bottom: 24px; }
+    .page-banner h2 { font-size: 1.5rem !important; }
+    .page-banner p { font-size: 0.95rem; }
+    .section-header { font-size: 1.1rem; letter-spacing: 1.5px; margin: 28px 0 14px 0; }
+    .scenario-card { padding: 16px 18px; }
+    .scenario-card h4 { font-size: 1.05rem !important; }
+}
+
+/* ── Tablets portrait (≤ 992px) ────────────────────────────────────────── */
+@media (max-width: 992px) {
+    html, body, [data-testid="stAppViewContainer"] { font-size: 14px !important; }
+    h1 { font-size: 1.6rem !important; }
+    h2 { font-size: 1.25rem !important; }
+    h3 { font-size: 1.05rem !important; }
+    .metric-value { font-size: 1.8rem; }
+    .metric-label { font-size: 0.8rem; letter-spacing: 0.8px; margin-top: 6px; }
+    .metric-card { padding: 14px 10px; border-radius: 10px; }
+    .pred-card { padding: 18px 12px; min-height: 110px; border-radius: 12px; }
+    .pred-value { font-size: 1.5rem; }
+    .pred-title { font-size: 0.8rem; margin-bottom: 10px; }
+    .pred-sub { font-size: 0.8rem; }
+    .page-banner { padding: 18px 20px; margin-bottom: 18px; border-radius: 12px; }
+    .page-banner h2 { font-size: 1.3rem !important; }
+    .page-banner p { font-size: 0.9rem; }
+    .section-header { font-size: 1rem; letter-spacing: 1px; margin: 22px 0 12px 0; }
+    .scenario-btn-row { gap: 10px; }
+    .scenario-card { padding: 14px 12px; min-width: 160px; }
+    .scenario-card h4 { font-size: 0.95rem !important; }
+    .scenario-card p { font-size: 0.78rem; }
+    [data-testid="stSidebar"] h1 { font-size: 1.15rem !important; padding: 8px 0 14px; }
+    [data-testid="stSidebar"] .stRadio > div > label { font-size: 0.95rem !important; }
+}
+
+/* ── Mobile / small screens (≤ 768px) ──────────────────────────────────── */
+@media (max-width: 768px) {
+    html, body, [data-testid="stAppViewContainer"] { font-size: 13px !important; }
+    h1 { font-size: 1.35rem !important; }
+    h2 { font-size: 1.1rem !important; }
+    h3 { font-size: 0.95rem !important; }
+    .metric-value { font-size: 1.5rem; }
+    .metric-label { font-size: 0.72rem; letter-spacing: 0.5px; margin-top: 4px; }
+    .metric-card { padding: 12px 8px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+    .pred-card { padding: 14px 10px; min-height: 90px; border-radius: 10px; }
+    .pred-value { font-size: 1.3rem; }
+    .pred-title { font-size: 0.75rem; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .pred-sub { font-size: 0.72rem; margin-top: 6px; }
+    .page-banner { padding: 14px 16px; margin-bottom: 14px; border-radius: 10px; }
+    .page-banner h2 { font-size: 1.1rem !important; }
+    .page-banner p { font-size: 0.82rem; }
+    .section-header { font-size: 0.9rem; letter-spacing: 0.8px; margin: 18px 0 10px 0; padding-bottom: 6px; }
+    .scenario-btn-row { flex-direction: column; gap: 8px; }
+    .scenario-card { min-width: unset; padding: 12px; border-radius: 10px; }
+    .scenario-card h4 { font-size: 0.9rem !important; }
+    .scenario-card p { font-size: 0.75rem; }
+    [data-testid="stSidebar"] h1 { font-size: 1rem !important; padding: 6px 0 10px; }
+    [data-testid="stSidebar"] .stRadio > div > label { font-size: 0.88rem !important; }
+    .stDataFrame { border-radius: 8px; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -310,7 +393,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         "<p style='text-align:center; color:#8b949e; font-size:0.7rem;'>"
-        "Textile Machine Failure Prediction<br>ML Pipeline v2.0</p>",
+        "Monitoring Yarn Machine Health and Efficiency<br>ML Pipeline v2.0</p>",
         unsafe_allow_html=True,
     )
 
@@ -324,7 +407,7 @@ def page_dashboard():
     st.markdown(
         '<div class="page-banner">'
         '<h2> Plant Operations Dashboard</h2>'
-        '<p>Real-time overview of textile machine fleet health, energy & production KPIs</p>'
+        '<p>Real-time overview of yarn machine fleet health, energy & production KPIs</p>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -451,7 +534,7 @@ def page_prediction():
 
     st.markdown(
         '<div class="page-banner">'
-        '<h2>Failure Prediction Engine</h2>'
+        '<h2>Health & Efficiency Prediction Engine</h2>'
         '<p>Enter machine parameters below — or use a quick scenario preset — to predict '
         'failure mode, imminent failure, 24-hour risk, and remaining useful life</p>'
         '</div>',

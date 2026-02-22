@@ -1,6 +1,6 @@
-# 🏭 Machinery Health Prediction
+# 🏭 Monitoring Yarn Machine Health and Efficiency
 
-> End-to-end ML pipeline & interactive Streamlit dashboard for predicting failures in textile manufacturing machines — monitors health, predicts remaining useful life (RUL), and provides actionable maintenance recommendations.
+> End-to-end ML pipeline & interactive Streamlit dashboard for monitoring yarn machine health and efficiency — tracks health, predicts remaining useful life (RUL), and provides actionable maintenance recommendations.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white" />
@@ -18,7 +18,7 @@
 |---------|-------------|
 | 🤖 **Multi-Target ML Pipeline** | Trains & evaluates 6 algorithms across 4 prediction targets |
 | 📊 **Interactive Dashboard** | Real-time KPIs, sensor gauges, fleet health overview |
-| 🔮 **Prediction Engine** | Instant failure predictions with quick scenario presets |
+| 🔮 **Prediction Engine** | Instant health & efficiency predictions with quick scenario presets |
 | 📈 **Model Analytics** | Compare model performance with interactive charts |
 | 🔍 **Data Explorer** | Browse, filter & correlate the raw dataset |
 | 📋 **Automated EDA** | Generate comprehensive EDA reports in one command |
@@ -39,7 +39,7 @@
 ## 📁 Project Structure
 
 ```
-Machinery_Health_Prediction/
+Monitoring_Yarn_Machine_Health/
 │
 ├── ml_pipeline.py            # Complete ML training & evaluation pipeline
 ├── streamlit_app.py          # Streamlit dashboard (4 pages)

@@ -20,7 +20,7 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "eda_results")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def perform_eda():
-    print("Starting EDA for Textile Machine Failure Prediction...")
+    print("Starting EDA for Monitoring Yarn Machine Health and Efficiency...")
 
     # 1. Load Data
     if not os.path.exists(DATA_PATH):
