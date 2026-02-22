@@ -251,6 +251,24 @@ def load_scaler():
 def load_label_encoders():
     return joblib.load(os.path.join(MODEL_DIR, "label_encoders.pkl"))
 
+@st.cache_resource
+def load_energy_models():
+    """Load energy stress & health models + their scalers + feature lists."""
+    em = {}
+    for key in ["Energy_Stress", "Energy_Health"]:
+        model_path = os.path.join(MODEL_DIR, f"Target_{key}_best_model.pkl")
+        scaler_name = "scaler_energy_stress.pkl" if key == "Energy_Stress" else "scaler_energy_health.pkl"
+        feat_name = "energy_stress_features.pkl" if key == "Energy_Stress" else "energy_health_features.pkl"
+        scaler_path = os.path.join(MODEL_DIR, scaler_name)
+        feat_path = os.path.join(MODEL_DIR, feat_name)
+        if all(os.path.exists(p) for p in [model_path, scaler_path, feat_path]):
+            em[key] = {
+                "model": joblib.load(model_path),
+                "scaler": joblib.load(scaler_path),
+                "features": joblib.load(feat_path),
+            }
+    return em
+
 @st.cache_data
 def load_results():
     results = {}
@@ -429,6 +447,7 @@ def page_prediction():
     models = load_models()
     scaler = load_scaler()
     label_encoders = load_label_encoders()
+    energy_models = load_energy_models()
 
     st.markdown(
         '<div class="page-banner">'
@@ -603,23 +622,23 @@ def page_prediction():
 
         imminent_flag = int(results.get("Failure_Imminent_Flag", 0))
         fail_24h = int(results.get("Target_Failure_24H", 0))
-        rul = float(results.get("Target_RUL_Hours", 0))
+        rul = float(results.get("Target_RUL_Hours", 0))  # kept for energy model input only
 
-        # ── derive CONSISTENT overall health from RUL ────────────────────
-        # RUL is the anchor truth — everything else must agree with it.
-        rul_days = rul / 24  # convert hours to days for human readability
+        # ── derive overall health from Failure Mode Code ──────────────────
+        mode_cls = "pred-healthy" if mode_code == 0 else (
+            "pred-info" if mode_code == 1 else (
+                "pred-warning" if mode_code == 2 else "pred-danger"))
+        mode_color = "#00ff88" if mode_code == 0 else (
+            "#00d4ff" if mode_code == 1 else (
+                "#ffc107" if mode_code == 2 else "#ff6b6b"))
 
-        if rul >= 1250:
-            # SAFE ZONE — healthy machine, no concerns
+        if mode_code == 0:
             overall_status = "HEALTHY"
             overall_icon = ""
             overall_color = "#00ff88"
             overall_bg = "rgba(0,255,136,0.08)"
             overall_border = "rgba(0,255,136,0.3)"
-            overall_summary = (
-                f"Machine is operating normally with <b>{rul:.0f} hours (~{rul_days:.0f} days)</b> "
-                f"of useful life remaining. No maintenance action required."
-            )
+            overall_summary = "Machine is operating normally. All parameters within safe limits. No maintenance action required."
             maint_label = "Not Required"
             maint_color = "#00ff88"
             maint_cls = "pred-healthy"
@@ -628,62 +647,51 @@ def page_prediction():
             risk_color = "#00ff88"
             risk_cls = "pred-healthy"
             risk_sub = "No risk of near-term failure"
-        elif rul >= 1100:
-            # CAUTION ZONE — degrading, needs attention soon
+        elif mode_code == 1:
+            overall_status = "EARLY WEAR"
+            overall_icon = ""
+            overall_color = "#00d4ff"
+            overall_bg = "rgba(0,212,255,0.08)"
+            overall_border = "rgba(0,212,255,0.3)"
+            overall_summary = "Machine is showing early signs of wear. <b>Monitor closely</b> and plan preventive maintenance in the upcoming schedule."
+            maint_label = "Plan Ahead"
+            maint_color = "#00d4ff"
+            maint_cls = "pred-info"
+            maint_sub = "Schedule maintenance in next cycle"
+            risk_label = "Low-Moderate"
+            risk_color = "#00d4ff"
+            risk_cls = "pred-info"
+            risk_sub = "Early degradation detected"
+        elif mode_code == 2:
             overall_status = "NEEDS ATTENTION"
             overall_icon = ""
             overall_color = "#ffc107"
             overall_bg = "rgba(255,193,7,0.08)"
             overall_border = "rgba(255,193,7,0.3)"
-            overall_summary = (
-                f"Machine is showing wear with <b>{rul:.0f} hours (~{rul_days:.0f} days)</b> "
-                f"of useful life remaining. <b>Schedule preventive maintenance</b> within "
-                f"the next {max(1, int(rul_days - 46))}-{int(rul_days)} days."
-            )
+            overall_summary = "Machine is in moderate wear phase. <b>Schedule preventive maintenance soon</b> to avoid progression to critical state."
             maint_label = "Schedule Soon"
             maint_color = "#ffc107"
             maint_cls = "pred-warning"
-            maint_sub = f"Plan maintenance within ~{int(rul_days)} days"
+            maint_sub = "Maintenance recommended within days"
             risk_label = "Moderate"
             risk_color = "#ffc107"
             risk_cls = "pred-warning"
-            risk_sub = "Approaching critical wear zone"
+            risk_sub = "Progressing toward critical wear"
         else:
-            # DANGER ZONE — critical, immediate action needed
             overall_status = "CRITICAL"
             overall_icon = ""
             overall_color = "#ff6b6b"
             overall_bg = "rgba(255,60,60,0.08)"
             overall_border = "rgba(255,60,60,0.3)"
-            if rul > 100:
-                overall_summary = (
-                    f"Machine is in critical condition with only <b>{rul:.0f} hours "
-                    f"(~{rul_days:.0f} days)</b> of useful life remaining. "
-                    f"<b>Immediate maintenance required</b> to prevent unplanned failure."
-                )
-            else:
-                overall_summary = (
-                    f"Machine is at imminent risk of failure with only <b>{rul:.0f} hours</b> "
-                    f"remaining. <b>Stop the machine and perform emergency maintenance NOW.</b>"
-                )
-            maint_label = " Immediate"
+            overall_summary = "Machine is in critical condition. <b>Immediate maintenance required</b> to prevent unplanned failure and downtime."
+            maint_label = "Immediate"
             maint_color = "#ff6b6b"
             maint_cls = "pred-danger"
             maint_sub = "Critical — act now to prevent failure"
-            risk_label = " High Risk"
+            risk_label = "High Risk"
             risk_color = "#ff6b6b"
             risk_cls = "pred-danger"
             risk_sub = "Failure expected without intervention"
-
-        # Mode card styling
-        mode_cls = "pred-healthy" if mode_code == 0 else (
-            "pred-info" if mode_code == 1 else (
-                "pred-warning" if mode_code == 2 else "pred-danger"))
-        mode_color = "#00ff88" if mode_code == 0 else (
-            "#00d4ff" if mode_code == 1 else (
-                "#ffc107" if mode_code == 2 else "#ff6b6b"))
-
-        rul_color = overall_color  # RUL card matches the overall status
 
         # ── OVERALL HEALTH BANNER ────────────────────────────────────────
         st.markdown(
@@ -700,9 +708,9 @@ def page_prediction():
             unsafe_allow_html=True,
         )
 
-        # ── 4 prediction cards ───────────────────────────────────────────
+        # ── 3 prediction cards ───────────────────────────────────────────
         st.markdown('<div class="section-header">Detailed Predictions</div>', unsafe_allow_html=True)
-        r1, r2, r3, r4 = st.columns(4)
+        r1, r2, r3 = st.columns(3)
 
         with r1:
             st.markdown(
@@ -728,83 +736,217 @@ def page_prediction():
                 f'<div class="pred-sub">{risk_sub}</div>'
                 f'</div>', unsafe_allow_html=True)
 
-        with r4:
+
+
+        # ── ENERGY IMPACT ANALYSIS (ML-PREDICTED) ────────────────────────
+        st.markdown('<div class="section-header">Energy Impact Analysis (ML Predicted)</div>', unsafe_allow_html=True)
+
+        # ── Run energy prediction models ─────────────────────────────────
+        # inject RUL & health from main model predictions for energy models
+        raw["RUL_Hours"] = rul
+        raw["Component_Health_%"] = min(100, max(0, (rul / 2000) * 100))
+
+        pred_stress, pred_health = None, None
+        if energy_models:
+            for key, em_data in energy_models.items():
+                ef = em_data["features"]
+                x_e = pd.DataFrame([{f: raw.get(f, 0) for f in ef}])
+                x_e_scaled = pd.DataFrame(em_data["scaler"].transform(x_e), columns=ef)
+                pred_val = em_data["model"].predict(x_e_scaled)[0]
+                if key == "Energy_Stress":
+                    pred_stress = pred_val
+                else:
+                    pred_health = pred_val
+
+        # fleet averages for comparison
+        fleet_stress = (df["Energy_kWh"] * df["Mechanical_Friction_Index"] / (df["Efficiency_Index"] + 0.01)).mean()
+        fleet_health = (df["Efficiency_Index"] * df["Power_Factor"] * 100 / (1 + df["Energy_kWh"] / df["Energy_kWh"].max())).mean()
+
+        # stress rating
+        if pred_stress is not None:
+            if pred_stress <= fleet_stress * 0.7:
+                stress_label, stress_color, stress_cls = "Low Stress", "#00ff88", "pred-healthy"
+            elif pred_stress <= fleet_stress * 1.2:
+                stress_label, stress_color, stress_cls = "Normal", "#00d4ff", "pred-info"
+            elif pred_stress <= fleet_stress * 1.6:
+                stress_label, stress_color, stress_cls = "Elevated", "#ffc107", "pred-warning"
+            else:
+                stress_label, stress_color, stress_cls = "Critical", "#ff6b6b", "pred-danger"
+
+        # health rating
+        if pred_health is not None:
+            if pred_health >= fleet_health * 1.1:
+                health_label, health_color, health_cls = "Excellent", "#00ff88", "pred-healthy"
+            elif pred_health >= fleet_health * 0.85:
+                health_label, health_color, health_cls = "Good", "#00d4ff", "pred-info"
+            elif pred_health >= fleet_health * 0.6:
+                health_label, health_color, health_cls = "Degraded", "#ffc107", "pred-warning"
+            else:
+                health_label, health_color, health_cls = "Poor", "#ff6b6b", "pred-danger"
+
+        # ── 2 ML-predicted energy cards ───────────────────────────────────
+        if pred_stress is not None and pred_health is not None:
+            epc1, epc2 = st.columns(2)
+            stress_delta = ((pred_stress - fleet_stress) / max(fleet_stress, 0.01)) * 100
+            s_sign = "+" if stress_delta > 0 else ""
+            with epc1:
+                st.markdown(
+                    f'<div class="pred-card {stress_cls}">'
+                    f'<div class="pred-title">Predicted Energy Stress Index</div>'
+                    f'<div class="pred-value" style="color:{stress_color}">{pred_stress:.1f}</div>'
+                    f'<div class="pred-sub">{stress_label} | Fleet avg: {fleet_stress:.1f} ({s_sign}{stress_delta:.0f}%)</div>'
+                    f'<div style="color:#8b949e; font-size:0.8rem; margin-top:8px;">'
+                    f'Higher = more energy-induced wear on components (R²=0.996)</div>'
+                    f'</div>', unsafe_allow_html=True)
+            health_delta = ((pred_health - fleet_health) / max(fleet_health, 0.01)) * 100
+            h_sign = "+" if health_delta > 0 else ""
+            with epc2:
+                st.markdown(
+                    f'<div class="pred-card {health_cls}">'
+                    f'<div class="pred-title">Predicted Energy Health Score</div>'
+                    f'<div class="pred-value" style="color:{health_color}">{pred_health:.1f}</div>'
+                    f'<div class="pred-sub">{health_label} | Fleet avg: {fleet_health:.1f} ({h_sign}{health_delta:.0f}%)</div>'
+                    f'<div style="color:#8b949e; font-size:0.8rem; margin-top:8px;">'
+                    f'Higher = better energy-efficiency health (R²=0.998)</div>'
+                    f'</div>', unsafe_allow_html=True)
+
+        avg_energy_fleet = df["Energy_kWh"].mean()
+        avg_pf_fleet = df["Power_Factor"].mean()
+        avg_current_fleet = df["Motor_Current_A"].mean()
+        avg_voltage_var_fleet = df["Voltage_Variation_%"].mean()
+        energy_per_output_val = energy / (output_kg + 1)
+        avg_epo_fleet = (df["Energy_kWh"] / (df["Output_kg"] + 1)).mean()
+
+        # energy efficiency rating
+        if energy_per_output_val <= avg_epo_fleet * 0.8:
+            eff_rating, eff_color, eff_cls = "Excellent", "#00ff88", "pred-healthy"
+        elif energy_per_output_val <= avg_epo_fleet * 1.1:
+            eff_rating, eff_color, eff_cls = "Normal", "#00d4ff", "pred-info"
+        elif energy_per_output_val <= avg_epo_fleet * 1.4:
+            eff_rating, eff_color, eff_cls = "High Usage", "#ffc107", "pred-warning"
+        else:
+            eff_rating, eff_color, eff_cls = "Excessive", "#ff6b6b", "pred-danger"
+
+        # power quality rating
+        if power_factor >= 0.9:
+            pq_label, pq_color, pq_cls = "Good", "#00ff88", "pred-healthy"
+        elif power_factor >= 0.8:
+            pq_label, pq_color, pq_cls = "Acceptable", "#ffc107", "pred-warning"
+        else:
+            pq_label, pq_color, pq_cls = "Poor", "#ff6b6b", "pred-danger"
+
+        # energy-health stress index
+        energy_stress = (energy / max(avg_energy_fleet, 0.01)) * (friction / max(df["Mechanical_Friction_Index"].mean(), 0.01))
+        if energy_stress <= 0.8:
+            impact_label, impact_color, impact_cls = "Low Impact", "#00ff88", "pred-healthy"
+            impact_desc = "Energy usage is well within safe limits — minimal stress on machine components."
+        elif energy_stress <= 1.3:
+            impact_label, impact_color, impact_cls = "Moderate", "#ffc107", "pred-warning"
+            impact_desc = "Energy load is putting moderate stress on the machine. Monitor wear indicators."
+        else:
+            impact_label, impact_color, impact_cls = "High Impact", "#ff6b6b", "pred-danger"
+            impact_desc = "Excessive energy consumption is accelerating component degradation. Reduce load or schedule maintenance."
+
+        # 4 energy cards
+        ec1, ec2, ec3, ec4 = st.columns(4)
+        energy_delta = ((energy - avg_energy_fleet) / max(avg_energy_fleet, 0.01)) * 100
+        delta_sign = "+" if energy_delta > 0 else ""
+        with ec1:
             st.markdown(
-                f'<div class="pred-card {mode_cls}">'
-                f'<div class="pred-title">Remaining Useful Life</div>'
-                f'<div class="pred-value" style="color:{rul_color}">{rul:.0f} h</div>'
-                f'<div class="pred-sub">~{rul_days:.0f} days until failure</div>'
+                f'<div class="pred-card {eff_cls}">'
+                f'<div class="pred-title">Energy Consumption</div>'
+                f'<div class="pred-value" style="color:{eff_color}">{energy:.1f} kWh</div>'
+                f'<div class="pred-sub">Fleet avg: {avg_energy_fleet:.1f} kWh ({delta_sign}{energy_delta:.0f}%)</div>'
+                f'</div>', unsafe_allow_html=True)
+        with ec2:
+            st.markdown(
+                f'<div class="pred-card {pq_cls}">'
+                f'<div class="pred-title">Power Quality</div>'
+                f'<div class="pred-value" style="color:{pq_color}">{pq_label}</div>'
+                f'<div class="pred-sub">Power Factor: {power_factor:.2f} (avg: {avg_pf_fleet:.2f})</div>'
+                f'</div>', unsafe_allow_html=True)
+        with ec3:
+            st.markdown(
+                f'<div class="pred-card {eff_cls}">'
+                f'<div class="pred-title">Energy Efficiency</div>'
+                f'<div class="pred-value" style="color:{eff_color}">{eff_rating}</div>'
+                f'<div class="pred-sub">{energy_per_output_val:.4f} kWh/kg (avg: {avg_epo_fleet:.4f})</div>'
+                f'</div>', unsafe_allow_html=True)
+        with ec4:
+            st.markdown(
+                f'<div class="pred-card {impact_cls}">'
+                f'<div class="pred-title">Energy-Health Impact</div>'
+                f'<div class="pred-value" style="color:{impact_color}">{impact_label}</div>'
+                f'<div class="pred-sub">Stress index: {energy_stress:.2f}x</div>'
                 f'</div>', unsafe_allow_html=True)
 
-        # ── RUL gauge ────────────────────────────────────────────────────
-        st.markdown("")
-        gc1, gc2 = st.columns([2, 1])
-        with gc1:
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=rul,
-                title=dict(text="Remaining Useful Life (hours)", font=dict(size=18, color="#8b949e")),
-                number=dict(suffix=" hrs", font=dict(size=40, color="#e6edf3")),
-                gauge=dict(
-                    axis=dict(range=[0, 2000], tickcolor="#8b949e",
-                              tickvals=[0, 500, 1000, 1100, 1250, 1500, 2000]),
-                    bar=dict(color=rul_color),
-                    bgcolor="rgba(13,17,23,0.9)",
-                    borderwidth=1,
-                    bordercolor="rgba(0,212,255,0.3)",
-                    steps=[
-                        dict(range=[0, 1100], color="rgba(255,60,60,0.2)"),
-                        dict(range=[1100, 1250], color="rgba(255,193,7,0.2)"),
-                        dict(range=[1250, 2000], color="rgba(0,255,136,0.12)"),
-                    ],
-                    threshold=dict(line=dict(color="#ff6b6b", width=3), thickness=0.8, value=1100),
-                ),
-            ))
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#e6edf3"),
-                              height=320, margin=dict(l=40, r=40, t=60, b=20))
+        # insight banner
+        st.markdown(
+            f'<div style="background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.2); '
+            f'border-radius:12px; padding:20px 28px; margin:16px 0 8px 0;">'
+            f'<span style="color:#00d4ff; font-weight:700; font-size:1rem;">ENERGY INSIGHT</span>'
+            f'<p style="color:#c9d1d9; margin:8px 0 0 0; font-size:0.95rem;">{impact_desc}</p>'
+            f'</div>', unsafe_allow_html=True)
+
+        # comparison charts
+        enc1, enc2 = st.columns(2)
+        with enc1:
+            categories = ["Energy (kWh)", "Power Factor", "Motor Current (A)", "Voltage Var (%)", "Efficiency"]
+            input_vals = [energy, power_factor, motor_current, voltage_var, efficiency]
+            fleet_vals = [avg_energy_fleet, avg_pf_fleet, avg_current_fleet, avg_voltage_var_fleet, df["Efficiency_Index"].mean()]
+            max_vals = [max(a, b, 0.01) for a, b in zip(input_vals, fleet_vals)]
+            norm_input = [v / m for v, m in zip(input_vals, max_vals)]
+            norm_fleet = [v / m for v, m in zip(fleet_vals, max_vals)]
+            fig = go.Figure()
+            fig.add_trace(go.Scatterpolar(r=norm_input + [norm_input[0]], theta=categories + [categories[0]],
+                                           fill='toself', name='Your Machine',
+                                           line=dict(color='#00d4ff'), fillcolor='rgba(0,212,255,0.15)'))
+            fig.add_trace(go.Scatterpolar(r=norm_fleet + [norm_fleet[0]], theta=categories + [categories[0]],
+                                           fill='toself', name='Fleet Average',
+                                           line=dict(color='#00ff88'), fillcolor='rgba(0,255,136,0.1)'))
+            fig.update_layout(
+                polar=dict(bgcolor="rgba(13,17,23,0.8)",
+                           radialaxis=dict(visible=True, range=[0, 1.2], gridcolor="rgba(139,148,158,0.15)",
+                                           tickfont=dict(size=9, color="#8b949e")),
+                           angularaxis=dict(gridcolor="rgba(139,148,158,0.15)",
+                                            tickfont=dict(size=11, color="#c9d1d9"))),
+                paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter", color="#e6edf3"),
+                height=350, margin=dict(l=60, r=60, t=40, b=40),
+                legend=dict(font=dict(size=11)),
+                title=dict(text="Energy Profile vs Fleet", font=dict(size=14, color="#8b949e")),
+            )
             st.plotly_chart(fig, use_container_width=True)
 
-        with gc2:
-            st.markdown(
-                '<div style="padding:24px; background:rgba(22,27,34,0.9); border:1px solid '
-                'rgba(0,212,255,0.15); border-radius:14px; height:100%;">'
-                '<h4 style="color:#00d4ff; margin:0 0 16px 0; font-size:1.1rem;"> Zone Legend</h4>'
-                '<div style="margin-bottom:14px;">'
-                '<span style="display:inline-block;width:14px;height:14px;background:rgba(0,255,136,0.5);'
-                'border-radius:3px;margin-right:8px;vertical-align:middle;"></span>'
-                '<span style="color:#c9d1d9;font-size:0.95rem;"><b>Safe Zone</b> (≥ 1250 h)</span><br>'
-                '<span style="color:#8b949e;font-size:0.85rem;margin-left:22px;">No action needed</span>'
-                '</div>'
-                '<div style="margin-bottom:14px;">'
-                '<span style="display:inline-block;width:14px;height:14px;background:rgba(255,193,7,0.5);'
-                'border-radius:3px;margin-right:8px;vertical-align:middle;"></span>'
-                '<span style="color:#c9d1d9;font-size:0.95rem;"><b>Caution Zone</b> (1100–1250 h)</span><br>'
-                '<span style="color:#8b949e;font-size:0.85rem;margin-left:22px;">Schedule maintenance</span>'
-                '</div>'
-                '<div>'
-                '<span style="display:inline-block;width:14px;height:14px;background:rgba(255,60,60,0.5);'
-                'border-radius:3px;margin-right:8px;vertical-align:middle;"></span>'
-                '<span style="color:#c9d1d9;font-size:0.95rem;"><b>Critical Zone</b> (&lt; 1100 h)</span><br>'
-                '<span style="color:#8b949e;font-size:0.85rem;margin-left:22px;">Immediate action required</span>'
-                '</div>'
-                '</div>',
-                unsafe_allow_html=True,
-            )
+        with enc2:
+            bar_labels = ["Energy (kWh)", "Motor Current (A)", "Voltage Var (%)", "Power Factor (×100)"]
+            your_vals = [energy, motor_current, voltage_var, power_factor * 100]
+            fleet_bar = [avg_energy_fleet, avg_current_fleet, avg_voltage_var_fleet, avg_pf_fleet * 100]
+            fig = go.Figure()
+            fig.add_trace(go.Bar(name="Your Machine", x=bar_labels, y=your_vals,
+                                  marker_color="#00d4ff", marker_line=dict(width=0)))
+            fig.add_trace(go.Bar(name="Fleet Average", x=bar_labels, y=fleet_bar,
+                                  marker_color="rgba(0,255,136,0.6)", marker_line=dict(width=0)))
+            fig.update_layout(**PLOTLY_LAYOUT, barmode="group", height=350,
+                              title=dict(text="Energy Parameters Comparison", font=dict(size=14, color="#8b949e")),
+                              legend=dict(font=dict(size=11)))
+            st.plotly_chart(fig, use_container_width=True)
 
         # ── raw prediction table ─────────────────────────────────────────
+
         with st.expander(" Raw Model Outputs (for technical review)"):
             pred_df = pd.DataFrame([{
                 "Failure_Mode_Code": mode_code,
                 "Failure_Mode_Label": mode_label,
-                "Failure_Imminent_Flag (RUL<1250)": "Yes" if imminent_flag else "No",
-                "Target_Failure_24H (RUL≤1100)": "Yes" if fail_24h else "No",
-                "Target_RUL_Hours": round(rul, 2),
+                "Failure_Imminent": "Yes" if imminent_flag else "No",
+                "Failure_24H_Risk": "Yes" if fail_24h else "No",
+                "Energy_Stress": round(pred_stress, 2) if pred_stress is not None else "N/A",
+                "Energy_Health": round(pred_health, 2) if pred_health is not None else "N/A",
             }])
             st.dataframe(pred_df, use_container_width=True)
             st.caption(
-                "**Note:** 'Failure Imminent' means RUL is below 1250 hours (caution zone). "
-                "'Failure 24H' means RUL is below 1100 hours (critical zone). "
-                "These are model-trained thresholds, not literal time-to-failure."
+                "**Note:** Failure Mode indicates the machine's degradation phase (0=Healthy → 3=Critical). "
+                "Energy Stress = energy-induced wear index (lower is better). "
+                "Energy Health = energy efficiency health score (higher is better)."
             )
 
         with st.expander("Feature Vector (scaled)"):
